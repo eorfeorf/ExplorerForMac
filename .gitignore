@@ -47,3 +47,6 @@ dist/
 
 # Other IDEs
 .idea/
+
+# Local project planning
+/plan.md
