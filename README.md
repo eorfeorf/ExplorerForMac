@@ -11,11 +11,25 @@ Windows Explorer の情報設計と操作感を macOS ネイティブ UI で実�
 - 隠しファイルの表示切り替え
 - フォルダー変更の自動反映
 - 複数選択、Quick Look、Finderで表示、パスのコピー
+- 現在のフォルダー内の名前検索、ターミナルで開く
+- Windows風のパンくずパスとコンテキストメニュー
 - 外付けボリュームの表示
+
+## 主なキーボード操作
+
+| 操作 | ショートカット |
+| --- | --- |
+| 戻る | `Command + ←` |
+| 進む | `Command + →` |
+| 1階層上へ | `Command + ↑` |
+| パスを入力 | `Command + L` |
+| 現在のフォルダーを検索 | `Command + F` |
+| 新規タブ | `Command + T` |
+| Quick Look | `Space` |
 
 ## ビルド
 
-Xcode で `ExplorerForMac.xcodeproj` を開き、`ExplorerForMac` スキームを実行します。コマンドラインでは次のように検証できます。
+macOS 13以降が必要です。Xcodeで `ExplorerForMac.xcodeproj` を開き、`ExplorerForMac` スキームを実行します。コマンドラインでは次のように検証できます。
 
 ```sh
 xcodebuild -project ExplorerForMac.xcodeproj -scheme ExplorerForMac CODE_SIGNING_ALLOWED=NO build
@@ -29,3 +43,7 @@ swift test
 Desktop、Documents、DownloadsはmacOSが保護するフォルダーです。本アプリは、起動時やサイドバー表示時にはこれらへアクセスせず、ユーザーが実際に開いた時だけ内容を読み取ります。
 
 macOSによる初回の許可確認自体はアプリから無効化できません。何度も確認される場合は、Apple Development証明書で安定してコード署名するか、アプリメニューの「フルディスクアクセス設定を開く…」から一度だけ許可してください。署名なしの開発ビルドは、再ビルド後にmacOSから別の実行ファイルとして扱われる場合があります。
+
+## ライセンス
+
+[MIT License](LICENSE)

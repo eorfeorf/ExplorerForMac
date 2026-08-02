@@ -12,7 +12,7 @@ let package = Package(
         .executableTarget(
             name: "ExplorerForMac",
             path: ".",
-            exclude: ["Tests", "docs", "ExplorerForMac.xcodeproj", "plan.md", "README.md"],
+            exclude: ["Tests", "docs", "ExplorerForMac.xcodeproj", "LICENSE", "plan.md", "README.md"],
             sources: ["App", "Core", "Features", "Infrastructure"],
             swiftSettings: [
                 .swiftLanguageMode(.v5)

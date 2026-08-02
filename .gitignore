@@ -1,5 +1,49 @@
-.build/
-DerivedData/
-*.xcuserstate
-xcuserdata/
+# macOS
 .DS_Store
+.AppleDouble
+.LSOverride
+Icon?
+._*
+.DocumentRevisions-V100/
+.fseventsd/
+.Spotlight-V100/
+.TemporaryItems/
+.Trashes/
+
+# Xcode
+DerivedData/
+build/
+xcuserdata/
+*.xcuserstate
+*.xcscmblueprint
+*.xccheckout
+*.moved-aside
+*.hmap
+*.ipa
+*.dSYM
+*.dSYM.zip
+*.xcarchive
+
+# Swift Package Manager
+.build/
+.swiftpm/
+
+# Local configuration and signing material
+.env
+.env.*
+!.env.example
+*.cer
+*.key
+*.mobileprovision
+*.p12
+*.pem
+
+# Local release artifacts
+artifacts/
+dist/
+*.app
+*.dmg
+*.pkg
+
+# Other IDEs
+.idea/

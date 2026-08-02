@@ -128,7 +128,7 @@ AppShell
 - `Return`：開く
 - `Command + L`：パスバーへ移動
 - `Command + T`：新規タブ
-- `Option + ↑`：親フォルダー
+- `Command + ↑`：親フォルダー
 - `Space`：Quick Look
 
 Windows風キーマップでは、可能な範囲でWindowsのキー操作も追加する。
