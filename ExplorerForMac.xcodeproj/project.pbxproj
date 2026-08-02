@@ -1,0 +1,181 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 60;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		C00000000000000000000001 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000001 /* AppDelegate.swift */; };
+		C00000000000000000000002 /* MainWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000002 /* MainWindowController.swift */; };
+		C00000000000000000000003 /* FileItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000003 /* FileItem.swift */; };
+		C00000000000000000000004 /* DirectoryService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000004 /* DirectoryService.swift */; };
+		C00000000000000000000005 /* DirectoryWatcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000005 /* DirectoryWatcher.swift */; };
+		C00000000000000000000006 /* NavigationHistory.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000006 /* NavigationHistory.swift */; };
+		C00000000000000000000007 /* AddressBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000007 /* AddressBarView.swift */; };
+		C00000000000000000000008 /* FolderTreeViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000008 /* FolderTreeViewController.swift */; };
+		C00000000000000000000009 /* FileListViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000009 /* FileListViewController.swift */; };
+		C0000000000000000000000A /* PreviewViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000000A /* PreviewViewController.swift */; };
+		C0000000000000000000000B /* TabBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000000B /* TabBarView.swift */; };
+		C0000000000000000000000C /* BrowserViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000000C /* BrowserViewController.swift */; };
+		C0000000000000000000000D /* SessionStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000000D /* SessionStore.swift */; };
+		C0000000000000000000000E /* NavigationHistoryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B00000000000000000000001 /* NavigationHistoryTests.swift */; };
+		C0000000000000000000000F /* DirectoryServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B00000000000000000000002 /* DirectoryServiceTests.swift */; };
+		C00000000000000000000010 /* SessionStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B00000000000000000000003 /* SessionStoreTests.swift */; };
+		C00000000000000000000011 /* AppLaunchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B00000000000000000000004 /* AppLaunchTests.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		D00000000000000000000001 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = F00000000000000000000001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = E00000000000000000000001;
+			remoteInfo = ExplorerForMac;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		A00000000000000000000001 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		A00000000000000000000002 /* MainWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainWindowController.swift; sourceTree = "<group>"; };
+		A00000000000000000000003 /* FileItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileItem.swift; sourceTree = "<group>"; };
+		A00000000000000000000004 /* DirectoryService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DirectoryService.swift; sourceTree = "<group>"; };
+		A00000000000000000000005 /* DirectoryWatcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DirectoryWatcher.swift; sourceTree = "<group>"; };
+		A00000000000000000000006 /* NavigationHistory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NavigationHistory.swift; sourceTree = "<group>"; };
+		A00000000000000000000007 /* AddressBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddressBarView.swift; sourceTree = "<group>"; };
+		A00000000000000000000008 /* FolderTreeViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FolderTreeViewController.swift; sourceTree = "<group>"; };
+		A00000000000000000000009 /* FileListViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileListViewController.swift; sourceTree = "<group>"; };
+		A0000000000000000000000A /* PreviewViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreviewViewController.swift; sourceTree = "<group>"; };
+		A0000000000000000000000B /* TabBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabBarView.swift; sourceTree = "<group>"; };
+		A0000000000000000000000C /* BrowserViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserViewController.swift; sourceTree = "<group>"; };
+		A0000000000000000000000D /* SessionStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionStore.swift; sourceTree = "<group>"; };
+		B00000000000000000000001 /* NavigationHistoryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NavigationHistoryTests.swift; sourceTree = "<group>"; };
+		B00000000000000000000002 /* DirectoryServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DirectoryServiceTests.swift; sourceTree = "<group>"; };
+		B00000000000000000000003 /* SessionStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionStoreTests.swift; sourceTree = "<group>"; };
+		B00000000000000000000004 /* AppLaunchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppLaunchTests.swift; sourceTree = "<group>"; };
+		A00000000000000000000020 /* Explorer for Mac.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Explorer for Mac.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		A00000000000000000000021 /* ExplorerForMacTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ExplorerForMacTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		A00000000000000000000022 /* plan.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = plan.md; sourceTree = "<group>"; };
+		A00000000000000000000023 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		D00000000000000000000010 /* Frameworks */ = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+		D00000000000000000000011 /* Frameworks */ = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		F00000000000000000000002 = {
+			isa = PBXGroup;
+			children = (
+				F00000000000000000000010 /* App */,
+				F00000000000000000000011 /* Core */,
+				F00000000000000000000012 /* Features */,
+				F00000000000000000000013 /* Infrastructure */,
+				F00000000000000000000014 /* Tests */,
+				A00000000000000000000022 /* plan.md */,
+				A00000000000000000000023 /* README.md */,
+				F00000000000000000000003 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		F00000000000000000000003 /* Products */ = {isa = PBXGroup; children = (A00000000000000000000020 /* Explorer for Mac.app */, A00000000000000000000021 /* ExplorerForMacTests.xctest */); name = Products; sourceTree = "<group>"; };
+		F00000000000000000000010 /* App */ = {isa = PBXGroup; children = (A00000000000000000000001 /* AppDelegate.swift */, A00000000000000000000002 /* MainWindowController.swift */); path = App; sourceTree = "<group>"; };
+		F00000000000000000000011 /* Core */ = {isa = PBXGroup; children = (F00000000000000000000020 /* Models */, F00000000000000000000021 /* FileSystem */, F00000000000000000000022 /* Navigation */); path = Core; sourceTree = "<group>"; };
+		F00000000000000000000012 /* Features */ = {isa = PBXGroup; children = (F00000000000000000000030 /* AddressBar */, F00000000000000000000031 /* FolderTree */, F00000000000000000000032 /* FileList */, F00000000000000000000033 /* Preview */, F00000000000000000000034 /* Tabs */); path = Features; sourceTree = "<group>"; };
+		F00000000000000000000013 /* Infrastructure */ = {isa = PBXGroup; children = (F00000000000000000000040 /* Persistence */); path = Infrastructure; sourceTree = "<group>"; };
+		F00000000000000000000014 /* Tests */ = {isa = PBXGroup; children = (F00000000000000000000050 /* UnitTests */); path = Tests; sourceTree = "<group>"; };
+		F00000000000000000000020 /* Models */ = {isa = PBXGroup; children = (A00000000000000000000003 /* FileItem.swift */); path = Models; sourceTree = "<group>"; };
+		F00000000000000000000021 /* FileSystem */ = {isa = PBXGroup; children = (A00000000000000000000004 /* DirectoryService.swift */, A00000000000000000000005 /* DirectoryWatcher.swift */); path = FileSystem; sourceTree = "<group>"; };
+		F00000000000000000000022 /* Navigation */ = {isa = PBXGroup; children = (A00000000000000000000006 /* NavigationHistory.swift */); path = Navigation; sourceTree = "<group>"; };
+		F00000000000000000000030 /* AddressBar */ = {isa = PBXGroup; children = (A00000000000000000000007 /* AddressBarView.swift */); path = AddressBar; sourceTree = "<group>"; };
+		F00000000000000000000031 /* FolderTree */ = {isa = PBXGroup; children = (A00000000000000000000008 /* FolderTreeViewController.swift */); path = FolderTree; sourceTree = "<group>"; };
+		F00000000000000000000032 /* FileList */ = {isa = PBXGroup; children = (A00000000000000000000009 /* FileListViewController.swift */); path = FileList; sourceTree = "<group>"; };
+		F00000000000000000000033 /* Preview */ = {isa = PBXGroup; children = (A0000000000000000000000A /* PreviewViewController.swift */); path = Preview; sourceTree = "<group>"; };
+		F00000000000000000000034 /* Tabs */ = {isa = PBXGroup; children = (A0000000000000000000000B /* TabBarView.swift */, A0000000000000000000000C /* BrowserViewController.swift */); path = Tabs; sourceTree = "<group>"; };
+		F00000000000000000000040 /* Persistence */ = {isa = PBXGroup; children = (A0000000000000000000000D /* SessionStore.swift */); path = Persistence; sourceTree = "<group>"; };
+		F00000000000000000000050 /* UnitTests */ = {isa = PBXGroup; children = (B00000000000000000000001 /* NavigationHistoryTests.swift */, B00000000000000000000002 /* DirectoryServiceTests.swift */, B00000000000000000000003 /* SessionStoreTests.swift */, B00000000000000000000004 /* AppLaunchTests.swift */); path = UnitTests; sourceTree = "<group>"; };
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		E00000000000000000000001 /* ExplorerForMac */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = F00000000000000000000061 /* Build configuration list for PBXNativeTarget "ExplorerForMac" */;
+			buildPhases = (D00000000000000000000020 /* Sources */, D00000000000000000000010 /* Frameworks */, D00000000000000000000030 /* Resources */);
+			buildRules = ();
+			dependencies = ();
+			name = ExplorerForMac;
+			productName = ExplorerForMac;
+			productReference = A00000000000000000000020 /* Explorer for Mac.app */;
+			productType = "com.apple.product-type.application";
+		};
+		E00000000000000000000002 /* ExplorerForMacTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = F00000000000000000000062 /* Build configuration list for PBXNativeTarget "ExplorerForMacTests" */;
+			buildPhases = (D00000000000000000000021 /* Sources */, D00000000000000000000011 /* Frameworks */, D00000000000000000000031 /* Resources */);
+			buildRules = ();
+			dependencies = (D00000000000000000000002 /* PBXTargetDependency */);
+			name = ExplorerForMacTests;
+			productName = ExplorerForMacTests;
+			productReference = A00000000000000000000021 /* ExplorerForMacTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		F00000000000000000000001 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1640;
+				LastUpgradeCheck = 1640;
+				TargetAttributes = {
+					E00000000000000000000001 = {CreatedOnToolsVersion = 16.4; };
+					E00000000000000000000002 = {CreatedOnToolsVersion = 16.4; TestTargetID = E00000000000000000000001; };
+				};
+			};
+			buildConfigurationList = F00000000000000000000060 /* Build configuration list for PBXProject "ExplorerForMac" */;
+			compatibilityVersion = "Xcode 15.0";
+			developmentRegion = ja;
+			hasScannedForEncodings = 0;
+			knownRegions = (ja, en, Base);
+			mainGroup = F00000000000000000000002;
+			productRefGroup = F00000000000000000000003 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (E00000000000000000000001 /* ExplorerForMac */, E00000000000000000000002 /* ExplorerForMacTests */);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		D00000000000000000000030 /* Resources */ = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+		D00000000000000000000031 /* Resources */ = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		D00000000000000000000020 /* Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (C00000000000000000000001, C00000000000000000000002, C00000000000000000000003, C00000000000000000000004, C00000000000000000000005, C00000000000000000000006, C00000000000000000000007, C00000000000000000000008, C00000000000000000000009, C0000000000000000000000A, C0000000000000000000000B, C0000000000000000000000C, C0000000000000000000000D); runOnlyForDeploymentPostprocessing = 0; };
+		D00000000000000000000021 /* Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (C0000000000000000000000E, C0000000000000000000000F, C00000000000000000000010, C00000000000000000000011); runOnlyForDeploymentPostprocessing = 0; };
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		D00000000000000000000002 /* PBXTargetDependency */ = {isa = PBXTargetDependency; target = E00000000000000000000001 /* ExplorerForMac */; targetProxy = D00000000000000000000001 /* PBXContainerItemProxy */; };
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		F00000000000000000000070 /* Debug */ = {isa = XCBuildConfiguration; buildSettings = {CLANG_ENABLE_MODULES = YES; CLANG_ENABLE_OBJC_ARC = YES; DEBUG_INFORMATION_FORMAT = dwarf; ENABLE_TESTABILITY = YES; GCC_C_LANGUAGE_STANDARD = gnu17; GCC_OPTIMIZATION_LEVEL = 0; MACOSX_DEPLOYMENT_TARGET = 13.0; ONLY_ACTIVE_ARCH = YES; SDKROOT = macosx; SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG; SWIFT_OPTIMIZATION_LEVEL = "-Onone"; }; name = Debug; };
+		F00000000000000000000071 /* Release */ = {isa = XCBuildConfiguration; buildSettings = {CLANG_ENABLE_MODULES = YES; CLANG_ENABLE_OBJC_ARC = YES; DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym"; GCC_C_LANGUAGE_STANDARD = gnu17; MACOSX_DEPLOYMENT_TARGET = 13.0; SDKROOT = macosx; SWIFT_COMPILATION_MODE = wholemodule; SWIFT_OPTIMIZATION_LEVEL = "-O"; }; name = Release; };
+		F00000000000000000000072 /* Debug */ = {isa = XCBuildConfiguration; buildSettings = {CODE_SIGN_STYLE = Automatic; COMBINE_HIDPI_IMAGES = YES; CURRENT_PROJECT_VERSION = 1; ENABLE_HARDENED_RUNTIME = YES; ENABLE_USER_SCRIPT_SANDBOXING = YES; GENERATE_INFOPLIST_FILE = YES; INFOPLIST_KEY_CFBundleDisplayName = "Explorer for Mac"; INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities"; INFOPLIST_KEY_NSPrincipalClass = NSApplication; LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks"; MARKETING_VERSION = 0.1.0; PRODUCT_BUNDLE_IDENTIFIER = com.example.ExplorerForMac; PRODUCT_MODULE_NAME = ExplorerForMac; PRODUCT_NAME = "Explorer for Mac"; SWIFT_STRICT_CONCURRENCY = minimal; SWIFT_VERSION = 5.0; }; name = Debug; };
+		F00000000000000000000073 /* Release */ = {isa = XCBuildConfiguration; buildSettings = {CODE_SIGN_STYLE = Automatic; COMBINE_HIDPI_IMAGES = YES; CURRENT_PROJECT_VERSION = 1; ENABLE_HARDENED_RUNTIME = YES; ENABLE_USER_SCRIPT_SANDBOXING = YES; GENERATE_INFOPLIST_FILE = YES; INFOPLIST_KEY_CFBundleDisplayName = "Explorer for Mac"; INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities"; INFOPLIST_KEY_NSPrincipalClass = NSApplication; LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks"; MARKETING_VERSION = 0.1.0; PRODUCT_BUNDLE_IDENTIFIER = com.example.ExplorerForMac; PRODUCT_MODULE_NAME = ExplorerForMac; PRODUCT_NAME = "Explorer for Mac"; SWIFT_STRICT_CONCURRENCY = minimal; SWIFT_VERSION = 5.0; }; name = Release; };
+		F00000000000000000000074 /* Debug */ = {isa = XCBuildConfiguration; buildSettings = {BUNDLE_LOADER = "$(TEST_HOST)"; CODE_SIGN_STYLE = Automatic; GENERATE_INFOPLIST_FILE = YES; LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks @loader_path/../Frameworks"; PRODUCT_BUNDLE_IDENTIFIER = com.example.ExplorerForMacTests; PRODUCT_NAME = "$(TARGET_NAME)"; SWIFT_STRICT_CONCURRENCY = minimal; SWIFT_VERSION = 5.0; TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Explorer for Mac.app/Contents/MacOS/Explorer for Mac"; }; name = Debug; };
+		F00000000000000000000075 /* Release */ = {isa = XCBuildConfiguration; buildSettings = {BUNDLE_LOADER = "$(TEST_HOST)"; CODE_SIGN_STYLE = Automatic; GENERATE_INFOPLIST_FILE = YES; LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks @loader_path/../Frameworks"; PRODUCT_BUNDLE_IDENTIFIER = com.example.ExplorerForMacTests; PRODUCT_NAME = "$(TARGET_NAME)"; SWIFT_STRICT_CONCURRENCY = minimal; SWIFT_VERSION = 5.0; TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Explorer for Mac.app/Contents/MacOS/Explorer for Mac"; }; name = Release; };
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		F00000000000000000000060 /* Build configuration list for PBXProject "ExplorerForMac" */ = {isa = XCConfigurationList; buildConfigurations = (F00000000000000000000070 /* Debug */, F00000000000000000000071 /* Release */); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+		F00000000000000000000061 /* Build configuration list for PBXNativeTarget "ExplorerForMac" */ = {isa = XCConfigurationList; buildConfigurations = (F00000000000000000000072 /* Debug */, F00000000000000000000073 /* Release */); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+		F00000000000000000000062 /* Build configuration list for PBXNativeTarget "ExplorerForMacTests" */ = {isa = XCConfigurationList; buildConfigurations = (F00000000000000000000074 /* Debug */, F00000000000000000000075 /* Release */); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+/* End XCConfigurationList section */
+	};
+	rootObject = F00000000000000000000001 /* Project object */;
+}
