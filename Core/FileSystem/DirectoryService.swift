@@ -1,5 +1,22 @@
 import Foundation
 
+enum DirectoryServiceError: LocalizedError {
+    case invalidFolderName
+    case itemAlreadyExists(String)
+    case trashFailed(String, String)
+
+    var errorDescription: String? {
+        switch self {
+        case .invalidFolderName:
+            return "フォルダー名を入力してください。名前には「/」を使用できません。"
+        case .itemAlreadyExists(let name):
+            return "「\(name)」という項目はすでに存在します。"
+        case .trashFailed(let name, let reason):
+            return "「\(name)」をゴミ箱に入れられませんでした。\n\(reason)"
+        }
+    }
+}
+
 final class DirectoryService {
     private let fileManager: FileManager
     private let workerQueue = DispatchQueue(
@@ -8,8 +25,63 @@ final class DirectoryService {
         attributes: .concurrent
     )
 
-    init(fileManager: FileManager = .default) {
+    init(fileManager: FileManager = Foundation.FileManager.default) {
         self.fileManager = fileManager
+    }
+
+    func suggestedFolderName(in directoryURL: URL, baseName: String = "新しいフォルダー") -> String {
+        let directory = directoryURL.standardizedFileURL
+        var candidate = baseName
+        var suffix = 2
+        while fileManager.fileExists(atPath: directory.appendingPathComponent(candidate).path) {
+            candidate = "\(baseName) (\(suffix))"
+            suffix += 1
+        }
+        return candidate
+    }
+
+    @discardableResult
+    func createFolder(named rawName: String, in directoryURL: URL) throws -> URL {
+        let name = rawName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !name.isEmpty,
+              name != ".",
+              name != "..",
+              !name.contains("/"),
+              !name.contains("\0") else {
+            throw DirectoryServiceError.invalidFolderName
+        }
+
+        let folderURL = directoryURL.standardizedFileURL
+            .appendingPathComponent(name, isDirectory: true)
+        guard !fileManager.fileExists(atPath: folderURL.path) else {
+            throw DirectoryServiceError.itemAlreadyExists(name)
+        }
+        try fileManager.createDirectory(
+            at: folderURL,
+            withIntermediateDirectories: false,
+            attributes: nil
+        )
+        return folderURL.standardizedFileURL
+    }
+
+    @discardableResult
+    func trashItems(at urls: [URL]) throws -> [URL] {
+        var resultingURLs: [URL] = []
+        for url in urls {
+            var resultingURL: NSURL?
+            do {
+                try fileManager.trashItem(at: url.standardizedFileURL, resultingItemURL: &resultingURL)
+            } catch {
+                throw DirectoryServiceError.trashFailed(
+                    url.lastPathComponent,
+                    error.localizedDescription
+                )
+            }
+            if let resultingURL {
+                resultingURLs.append(resultingURL as URL)
+            }
+        }
+        return resultingURLs
     }
 
     func contents(of directoryURL: URL, showsHiddenFiles: Bool) throws -> DirectorySnapshot {

@@ -1,4 +1,5 @@
 import AppKit
+import Foundation
 
 protocol BrowserViewControllerDelegate: AnyObject {
     func browser(_ browser: BrowserViewController, didRequestNavigateTo url: URL)

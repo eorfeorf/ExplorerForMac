@@ -1,4 +1,5 @@
 import AppKit
+import Foundation
 import QuickLookUI
 
 protocol FileListViewControllerDelegate: AnyObject {
@@ -50,6 +51,7 @@ final class FileListViewController: NSViewController {
     private var reloadWorkItem: DispatchWorkItem?
     private var sharingServicePicker: NSSharingServicePicker?
     private var watchedDirectory: URL?
+    private var pendingSelectionURL: URL?
 
     private let dateFormatter: DateFormatter = {
         let formatter = DateFormatter()
@@ -173,6 +175,10 @@ final class FileListViewController: NSViewController {
         ) != nil
     }
 
+    static func dragPasteboardObject(for url: URL) -> NSURL {
+        url.standardizedFileURL as NSURL
+    }
+
     func showQuickLook() {
         guard !selectedItems.isEmpty else { return }
         guard let panel = QLPreviewPanel.shared() else { return }
@@ -212,6 +218,8 @@ final class FileListViewController: NSViewController {
         tableView.columnAutoresizingStyle = .lastColumnOnlyAutoresizingStyle
         tableView.delegate = self
         tableView.dataSource = self
+        tableView.setDraggingSourceOperationMask([], forLocal: true)
+        tableView.setDraggingSourceOperationMask(.copy, forLocal: false)
         tableView.doubleAction = #selector(openSelection)
         tableView.target = self
         tableView.setAccessibilityLabel("ファイル一覧")
@@ -237,7 +245,7 @@ final class FileListViewController: NSViewController {
         return makeBackgroundContextMenu()
     }
 
-    private func makeItemContextMenu() -> NSMenu {
+    func makeItemContextMenu() -> NSMenu {
         let menu = NSMenu(title: "項目")
         let selection = selectedItems
         let singleItem = selection.count == 1 ? selection[0] : nil
@@ -266,6 +274,9 @@ final class FileListViewController: NSViewController {
             menu.addItem(openWithItem)
         }
 
+        menu.addItem(.separator())
+        menu.addItem(makeNewFolderMenuItem())
+        menu.addItem(.separator())
         menu.addItem(makeMenuItem(
             title: "Quick Look",
             symbol: "eye",
@@ -311,6 +322,8 @@ final class FileListViewController: NSViewController {
             action: #selector(shareSelection)
         ))
         menu.addItem(.separator())
+        menu.addItem(makeTrashMenuItem(selectionCount: selection.count))
+        menu.addItem(.separator())
         menu.addItem(makeMenuItem(
             title: "プロパティ",
             symbol: "info.circle",
@@ -319,8 +332,10 @@ final class FileListViewController: NSViewController {
         return menu
     }
 
-    private func makeBackgroundContextMenu() -> NSMenu {
+    func makeBackgroundContextMenu() -> NSMenu {
         let menu = NSMenu(title: "フォルダー")
+        menu.addItem(makeNewFolderMenuItem())
+        menu.addItem(.separator())
         menu.addItem(makeMenuItem(
             title: "更新",
             symbol: "arrow.clockwise",
@@ -354,6 +369,22 @@ final class FileListViewController: NSViewController {
             action: #selector(showCurrentDirectoryProperties)
         ))
         return menu
+    }
+
+    private func makeNewFolderMenuItem() -> NSMenuItem {
+        makeMenuItem(
+            title: "新しいフォルダー",
+            symbol: "folder.badge.plus",
+            action: #selector(promptForNewFolder)
+        )
+    }
+
+    private func makeTrashMenuItem(selectionCount: Int) -> NSMenuItem {
+        makeMenuItem(
+            title: selectionCount > 1 ? "選択した項目をゴミ箱に入れる" : "ゴミ箱に入れる",
+            symbol: "trash",
+            action: #selector(confirmMoveSelectionToTrash)
+        )
     }
 
     private func makeOpenWithMenu(for item: FileItem) -> NSMenu {
@@ -454,6 +485,7 @@ final class FileListViewController: NSViewController {
     }
 
     private func applySearchAndReload() {
+        let selectedURLs = Set(selectedItems.map { $0.url.standardizedFileURL })
         if searchQuery.isEmpty {
             items = allItems
         } else {
@@ -463,7 +495,23 @@ final class FileListViewController: NSViewController {
         sortItems(using: tableView.sortDescriptors)
         tableView.deselectAll(nil)
         tableView.reloadData()
-        updateStatusLabel()
+        let selectionURLs = pendingSelectionURL.map { Set([$0.standardizedFileURL]) } ?? selectedURLs
+        let selectedRows = IndexSet(items.indices.filter {
+            selectionURLs.contains(items[$0].url.standardizedFileURL)
+        })
+        if !selectedRows.isEmpty {
+            tableView.selectRowIndexes(selectedRows, byExtendingSelection: false)
+            tableView.scrollRowToVisible(selectedRows.first!)
+        }
+        updateStatusLabel(selectedCount: selectedRows.count)
+
+        if let createdFolderURL = pendingSelectionURL,
+           allItems.contains(where: { $0.url.standardizedFileURL == createdFolderURL.standardizedFileURL }) {
+            pendingSelectionURL = nil
+            statusLabel.stringValue = selectedRows.isEmpty
+                ? "「\(createdFolderURL.lastPathComponent)」を作成しました（検索条件により非表示）"
+                : "「\(createdFolderURL.lastPathComponent)」を作成しました"
+        }
 
         if items.isEmpty {
             messageLabel.stringValue = searchQuery.isEmpty
@@ -635,6 +683,62 @@ final class FileListViewController: NSViewController {
         reload()
     }
 
+    @objc private func promptForNewFolder() {
+        guard let currentDirectory else { return }
+
+        let nameField = NSTextField(string: directoryService.suggestedFolderName(in: currentDirectory))
+        nameField.frame = NSRect(x: 0, y: 0, width: 320, height: 24)
+        nameField.setAccessibilityLabel("新しいフォルダー名")
+
+        let alert = NSAlert()
+        alert.alertStyle = .informational
+        alert.messageText = "新しいフォルダー"
+        alert.informativeText = "フォルダー名を入力してください。"
+        alert.accessoryView = nameField
+        alert.addButton(withTitle: "作成")
+        alert.addButton(withTitle: "キャンセル")
+
+        let completion: (NSApplication.ModalResponse) -> Void = { [weak self] response in
+            guard response == .alertFirstButtonReturn else { return }
+            self?.createFolder(named: nameField.stringValue)
+        }
+        if let window = view.window {
+            alert.beginSheetModal(for: window, completionHandler: completion)
+            DispatchQueue.main.async {
+                window.makeFirstResponder(nameField)
+                nameField.selectText(nil)
+            }
+        } else {
+            completion(alert.runModal())
+        }
+    }
+
+    private func createFolder(named name: String) {
+        guard let currentDirectory else { return }
+        do {
+            let folderURL = try directoryService.createFolder(named: name, in: currentDirectory)
+            pendingSelectionURL = folderURL
+            reloadWorkItem?.cancel()
+            loadCurrentDirectory(showProgress: false)
+        } catch {
+            presentFileOperationError(
+                message: "フォルダーを作成できませんでした",
+                error: error
+            )
+        }
+    }
+
+    private func presentFileOperationError(message: String, error: Error) {
+        let alert = NSAlert(error: error)
+        alert.alertStyle = .warning
+        alert.messageText = message
+        if let window = view.window {
+            alert.beginSheetModal(for: window)
+        } else {
+            alert.runModal()
+        }
+    }
+
     @objc private func openFullDiskAccessSettings() {
         guard let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_AllFiles") else { return }
         NSWorkspace.shared.open(url)
@@ -661,6 +765,51 @@ final class FileListViewController: NSViewController {
 
     @objc private func showProperties() {
         presentProperties(for: selectedItems)
+    }
+
+    @objc private func confirmMoveSelectionToTrash() {
+        let selection = selectedItems
+        guard !selection.isEmpty else { return }
+
+        let alert = NSAlert()
+        alert.alertStyle = .warning
+        if selection.count == 1, let item = selection.first {
+            alert.messageText = "「\(item.name)」をゴミ箱に入れますか？"
+        } else {
+            alert.messageText = "選択した\(selection.count)個の項目をゴミ箱に入れますか？"
+        }
+        let names = selection.prefix(4).map { "・\($0.name)" }.joined(separator: "\n")
+        let remainingCount = selection.count - min(selection.count, 4)
+        alert.informativeText = remainingCount > 0
+            ? "\(names)\n…ほか\(remainingCount)個"
+            : names
+        let trashButton = alert.addButton(withTitle: "ゴミ箱に入れる")
+        trashButton.hasDestructiveAction = true
+        alert.addButton(withTitle: "キャンセル")
+
+        let completion: (NSApplication.ModalResponse) -> Void = { [weak self] response in
+            guard response == .alertFirstButtonReturn else { return }
+            self?.moveItemsToTrash(selection)
+        }
+        if let window = view.window {
+            alert.beginSheetModal(for: window, completionHandler: completion)
+        } else {
+            completion(alert.runModal())
+        }
+    }
+
+    private func moveItemsToTrash(_ selection: [FileItem]) {
+        do {
+            try directoryService.trashItems(at: selection.map(\.url))
+            tableView.deselectAll(nil)
+            reload()
+        } catch {
+            reload()
+            presentFileOperationError(
+                message: "項目をゴミ箱に入れられませんでした",
+                error: error
+            )
+        }
     }
 
     @objc private func showCurrentDirectoryProperties() {
@@ -734,6 +883,11 @@ final class FileListViewController: NSViewController {
 extension FileListViewController: NSTableViewDataSource {
     func numberOfRows(in tableView: NSTableView) -> Int {
         items.count
+    }
+
+    func tableView(_ tableView: NSTableView, pasteboardWriterForRow row: Int) -> NSPasteboardWriting? {
+        guard items.indices.contains(row) else { return nil }
+        return Self.dragPasteboardObject(for: items[row].url)
     }
 }
 

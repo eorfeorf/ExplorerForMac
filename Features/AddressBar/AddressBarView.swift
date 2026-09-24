@@ -1,4 +1,5 @@
 import AppKit
+import Foundation
 
 private final class FolderSearchField: NSSearchField {
     var onTextChange: (() -> Void)?

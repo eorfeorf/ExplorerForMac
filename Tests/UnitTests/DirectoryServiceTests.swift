@@ -47,4 +47,43 @@ final class DirectoryServiceTests: XCTestCase {
 
         XCTAssertThrowsError(try DirectoryService().contents(of: file, showsHiddenFiles: false))
     }
+
+    func testSuggestedFolderNameUsesWindowsStyleSuffix() throws {
+        let service = DirectoryService()
+        try service.createFolder(named: "新しいフォルダー", in: temporaryDirectory)
+        try service.createFolder(named: "新しいフォルダー (2)", in: temporaryDirectory)
+
+        XCTAssertEqual(
+            service.suggestedFolderName(in: temporaryDirectory),
+            "新しいフォルダー (3)"
+        )
+    }
+
+    func testCreateFolderValidatesNameAndRejectsDuplicates() throws {
+        let service = DirectoryService()
+        let folderURL = try service.createFolder(named: "資料", in: temporaryDirectory)
+        var isDirectory: ObjCBool = false
+
+        XCTAssertTrue(FileManager.default.fileExists(atPath: folderURL.path, isDirectory: &isDirectory))
+        XCTAssertTrue(isDirectory.boolValue)
+        XCTAssertThrowsError(try service.createFolder(named: "資料", in: temporaryDirectory))
+        XCTAssertThrowsError(try service.createFolder(named: "../資料", in: temporaryDirectory))
+        XCTAssertThrowsError(try service.createFolder(named: "   ", in: temporaryDirectory))
+    }
+
+    func testTrashItemsMovesMultipleItemsToTrash() throws {
+        let first = temporaryDirectory.appendingPathComponent("first.txt")
+        let second = temporaryDirectory.appendingPathComponent("second.txt")
+        try Data("first".utf8).write(to: first)
+        try Data("second".utf8).write(to: second)
+
+        let movedURLs = try DirectoryService().trashItems(at: [first, second])
+        defer {
+            movedURLs.forEach { try? FileManager.default.removeItem(at: $0) }
+        }
+
+        XCTAssertFalse(FileManager.default.fileExists(atPath: first.path))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: second.path))
+        XCTAssertEqual(movedURLs.count, 2)
+    }
 }

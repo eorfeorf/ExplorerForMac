@@ -1,4 +1,5 @@
 import AppKit
+import Foundation
 
 private final class WindowActionButton: NSButton {
     enum Kind {
@@ -88,6 +89,7 @@ private final class WindowActionButton: NSButton {
 
 protocol TabBarViewDelegate: AnyObject {
     func tabBar(_ tabBar: TabBarView, didSelect index: Int)
+    func tabBar(_ tabBar: TabBarView, didRequestDetach index: Int, at screenPoint: NSPoint?)
     func tabBarDidRequestNewTab(_ tabBar: TabBarView)
     func tabBarDidRequestCloseCurrentTab(_ tabBar: TabBarView)
 }
@@ -99,7 +101,10 @@ final class TabBarView: NSView {
 
     private let tabControl = NSSegmentedControl()
     private let addButton = NSButton()
+    private let detachTabButton = NSButton()
     private let closeTabButton = NSButton()
+    private lazy var tabDragRecognizer = NSPanGestureRecognizer(target: self, action: #selector(handleTabDrag(_:)))
+    private var draggedTabIndex: Int?
 
     private lazy var minimizeWindowButton = WindowActionButton(
         kind: .minimize,
@@ -141,6 +146,7 @@ final class TabBarView: NSView {
             tabControl.selectedSegment = selectedIndex
         }
         closeTabButton.isEnabled = !titles.isEmpty
+        detachTabButton.isEnabled = titles.count > 1
     }
 
     private func setupUI() {
@@ -154,11 +160,18 @@ final class TabBarView: NSView {
         tabControl.action = #selector(selectTab)
         tabControl.setAccessibilityLabel("タブ")
         tabControl.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+        tabControl.addGestureRecognizer(tabDragRecognizer)
 
         configureButton(addButton, symbol: "plus", label: "新規タブ", action: #selector(addTab))
+        configureButton(
+            detachTabButton,
+            symbol: "macwindow.on.rectangle",
+            label: "現在のタブを新しいウインドウへ移動",
+            action: #selector(detachTab)
+        )
         configureButton(closeTabButton, symbol: "xmark.circle", label: "現在のタブを閉じる", action: #selector(closeTab))
 
-        let tabStack = NSStackView(views: [tabControl, addButton, closeTabButton])
+        let tabStack = NSStackView(views: [tabControl, addButton, detachTabButton, closeTabButton])
         tabStack.translatesAutoresizingMaskIntoConstraints = false
         tabStack.orientation = .horizontal
         tabStack.alignment = .centerY
@@ -220,8 +233,60 @@ final class TabBarView: NSView {
         delegate?.tabBarDidRequestNewTab(self)
     }
 
+    @objc private func detachTab() {
+        guard tabControl.selectedSegment >= 0 else { return }
+        delegate?.tabBar(self, didRequestDetach: tabControl.selectedSegment, at: nil)
+    }
+
     @objc private func closeTab() {
         delegate?.tabBarDidRequestCloseCurrentTab(self)
+    }
+
+    @objc private func handleTabDrag(_ recognizer: NSPanGestureRecognizer) {
+        switch recognizer.state {
+        case .began:
+            let point = recognizer.location(in: tabControl)
+            guard let index = tabIndex(at: point) else {
+                draggedTabIndex = nil
+                return
+            }
+            draggedTabIndex = index
+            tabControl.selectedSegment = index
+            tabControl.alphaValue = 0.7
+            delegate?.tabBar(self, didSelect: index)
+        case .ended:
+            defer {
+                draggedTabIndex = nil
+                tabControl.alphaValue = 1
+            }
+            guard let index = draggedTabIndex else { return }
+            let point = recognizer.location(in: self)
+            let translation = recognizer.translation(in: self)
+            let movedFarEnough = hypot(translation.x, translation.y) >= 20
+            let endedOutsideTabBar = !bounds.insetBy(dx: -12, dy: -12).contains(point)
+            guard movedFarEnough, endedOutsideTabBar else { return }
+            let windowPoint = recognizer.location(in: nil)
+            let screenPoint = window?.convertPoint(toScreen: windowPoint)
+            delegate?.tabBar(self, didRequestDetach: index, at: screenPoint)
+        case .cancelled, .failed:
+            draggedTabIndex = nil
+            tabControl.alphaValue = 1
+        default:
+            break
+        }
+    }
+
+    private func tabIndex(at point: NSPoint) -> Int? {
+        guard tabControl.bounds.contains(point), tabControl.segmentCount > 0 else { return nil }
+        var leadingEdge: CGFloat = 0
+        for index in 0..<tabControl.segmentCount {
+            let trailingEdge = leadingEdge + tabControl.width(forSegment: index)
+            if point.x >= leadingEdge, point.x <= trailingEdge {
+                return index
+            }
+            leadingEdge = trailingEdge
+        }
+        return nil
     }
 
     @objc private func minimizeWindow() {

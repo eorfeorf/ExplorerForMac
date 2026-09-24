@@ -1,4 +1,21 @@
 import AppKit
+import Foundation
+
+struct DetachedTabState {
+    let history: NavigationHistory
+    let searchQuery: String
+    let showsHiddenFiles: Bool
+}
+
+protocol MainWindowControllerCoordinator: AnyObject {
+    func mainWindowControllerDidChangeState(_ controller: MainWindowController)
+    func mainWindowController(
+        _ controller: MainWindowController,
+        didDetach tab: DetachedTabState,
+        at screenPoint: NSPoint?
+    )
+    func mainWindowControllerWillClose(_ controller: MainWindowController)
+}
 
 private final class BrowserSession {
     var history: NavigationHistory
@@ -11,8 +28,9 @@ private final class BrowserSession {
 }
 
 final class MainWindowController: NSWindowController, NSWindowDelegate {
+    weak var coordinator: MainWindowControllerCoordinator?
+
     private let directoryService = DirectoryService()
-    private let sessionStore = SessionStore()
     private let rootViewController = NSViewController()
     private let tabBar = TabBarView()
     private let addressBar = AddressBarView()
@@ -25,7 +43,7 @@ final class MainWindowController: NSWindowController, NSWindowDelegate {
         sessions.indices.contains(selectedSessionIndex) ? sessions[selectedSessionIndex] : nil
     }
 
-    init() {
+    init(session: PersistedSession? = nil, detachedTab: DetachedTabState? = nil) {
         let window = NSWindow(
             contentRect: NSRect(x: 0, y: 0, width: 1240, height: 780),
             styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView],
@@ -47,7 +65,11 @@ final class MainWindowController: NSWindowController, NSWindowDelegate {
         setupRootView()
         window.setContentSize(NSSize(width: 1240, height: 780))
         window.center()
-        restoreSession()
+        if let detachedTab {
+            restoreDetachedTab(detachedTab)
+        } else {
+            restoreSession(session)
+        }
     }
 
     required init?(coder: NSCoder) {
@@ -55,16 +77,20 @@ final class MainWindowController: NSWindowController, NSWindowDelegate {
     }
 
     func saveSession() {
-        guard !sessions.isEmpty else { return }
-        sessionStore.save(PersistedSession(
+        coordinator?.mainWindowControllerDidChangeState(self)
+    }
+
+    var persistedSession: PersistedSession? {
+        guard !sessions.isEmpty else { return nil }
+        return PersistedSession(
             tabs: sessions.map(\.history),
             selectedTabIndex: selectedSessionIndex,
             showsHiddenFiles: showsHiddenFiles
-        ))
+        )
     }
 
     func windowWillClose(_ notification: Notification) {
-        saveSession()
+        coordinator?.mainWindowControllerWillClose(self)
     }
 
     @objc func newTab(_ sender: Any?) {
@@ -86,6 +112,22 @@ final class MainWindowController: NSWindowController, NSWindowDelegate {
         selectedSessionIndex = min(selectedSessionIndex, sessions.count - 1)
         showSelectedSession()
         saveSession()
+    }
+
+    @objc func detachCurrentTab(_ sender: Any?) {
+        detachSession(at: selectedSessionIndex, screenPoint: nil)
+    }
+
+    @discardableResult
+    func openExternalFolder(_ url: URL) -> Bool {
+        let normalized = url.standardizedFileURL
+        var isDirectory: ObjCBool = false
+        guard FileManager.default.fileExists(atPath: normalized.path, isDirectory: &isDirectory),
+              isDirectory.boolValue else { return false }
+        addSession(history: NavigationHistory(initialURL: normalized), activate: true)
+        window?.makeKeyAndOrderFront(nil)
+        saveSession()
+        return true
     }
 
     @objc func goBack(_ sender: Any?) {
@@ -174,8 +216,7 @@ final class MainWindowController: NSWindowController, NSWindowDelegate {
         ])
     }
 
-    private func restoreSession() {
-        let stored = sessionStore.load()
+    private func restoreSession(_ stored: PersistedSession?) {
         showsHiddenFiles = stored?.showsHiddenFiles ?? false
         // Restoring history must not probe protected folders at application launch.
         // Missing or denied paths are reported inline when their tab is actually shown.
@@ -195,6 +236,13 @@ final class MainWindowController: NSWindowController, NSWindowDelegate {
         }
     }
 
+    private func restoreDetachedTab(_ tab: DetachedTabState) {
+        showsHiddenFiles = tab.showsHiddenFiles
+        addSession(history: tab.history, activate: true)
+        selectedSession?.browserViewController.setSearchQuery(tab.searchQuery)
+        updateNavigationUI()
+    }
+
     private func addSession(history: NavigationHistory, activate: Bool) {
         let browser = BrowserViewController(directoryService: directoryService)
         browser.browserDelegate = self
@@ -205,6 +253,31 @@ final class MainWindowController: NSWindowController, NSWindowDelegate {
             selectedSessionIndex = sessions.count - 1
             showSelectedSession()
         }
+    }
+
+    private func detachSession(at index: Int, screenPoint: NSPoint?) {
+        guard sessions.count > 1,
+              sessions.indices.contains(index),
+              let coordinator else { return }
+
+        let removed = sessions.remove(at: index)
+        let detachedTab = DetachedTabState(
+            history: removed.history,
+            searchQuery: removed.browserViewController.searchQuery,
+            showsHiddenFiles: showsHiddenFiles
+        )
+        removed.browserViewController.view.removeFromSuperview()
+        removed.browserViewController.removeFromParent()
+
+        if index < selectedSessionIndex {
+            selectedSessionIndex -= 1
+        } else if index == selectedSessionIndex {
+            selectedSessionIndex = min(index, sessions.count - 1)
+        }
+
+        showSelectedSession()
+        coordinator.mainWindowController(self, didDetach: detachedTab, at: screenPoint)
+        saveSession()
     }
 
     private func showSelectedSession() {
@@ -347,6 +420,10 @@ extension MainWindowController: TabBarViewDelegate {
 
     func tabBarDidRequestNewTab(_ tabBar: TabBarView) {
         newTab(tabBar)
+    }
+
+    func tabBar(_ tabBar: TabBarView, didRequestDetach index: Int, at screenPoint: NSPoint?) {
+        detachSession(at: index, screenPoint: screenPoint)
     }
 
     func tabBarDidRequestCloseCurrentTab(_ tabBar: TabBarView) {
