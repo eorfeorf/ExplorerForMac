@@ -60,6 +60,10 @@ Gatekeeperの警告なしで配布するには、Apple Developer ProgramのDevel
 CODE_SIGN_IDENTITY="Developer ID Application: Your Name (TEAMID)" ./scripts/build-release.sh
 ```
 
+### 手元のMacで初回起動する
+
+公証されていないアプリを手元で使う場合は、アプリをApplicationsフォルダーへコピーした後、Finderで`ExplorerForMac.command`をControlキーを押しながらクリックして「開く」を選びます。補助ファイルが起動したら対象のアプリを選び、内容を確認して続行してください。この補助ファイルはExplorer for Macのアプリ識別子とコード署名の整合性を確認してから、そのアプリ内だけの隔離属性を解除して起動します。Appleによる公証や開発元の確認の代わりにはならないため、自分でビルドしたものなど、入手元を信頼できるアプリにだけ使ってください。アプリを更新した場合は、新しいアプリに対してもう一度実行が必要です。
+
 ## macOSのフォルダーアクセス許可
 
 Desktop、Documents、DownloadsはmacOSが保護するフォルダーです。本アプリは、起動時やサイドバー表示時にはこれらへアクセスせず、ユーザーが実際に開いた時だけ内容を読み取ります。
