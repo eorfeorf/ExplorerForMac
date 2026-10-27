@@ -11,6 +11,10 @@ protocol FileListViewControllerDelegate: AnyObject {
 private final class ExplorerTableView: NSTableView {
     var onOpen: (() -> Void)?
     var onQuickLook: (() -> Void)?
+    var onCopy: (() -> Void)?
+    var onCut: (() -> Void)?
+    var onPaste: (() -> Void)?
+    var onRename: (() -> Void)?
     var contextMenuProvider: ((NSEvent) -> NSMenu?)?
 
     override func menu(for event: NSEvent) -> NSMenu? {
@@ -18,6 +22,10 @@ private final class ExplorerTableView: NSTableView {
     }
 
     override func keyDown(with event: NSEvent) {
+        if event.keyCode == 120 {
+            onRename?()
+            return
+        }
         if event.keyCode == 49 {
             onQuickLook?()
             return
@@ -27,6 +35,17 @@ private final class ExplorerTableView: NSTableView {
             return
         }
         super.keyDown(with: event)
+    }
+
+    override func performKeyEquivalent(with event: NSEvent) -> Bool {
+        let modifiers = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
+        guard modifiers == .command || modifiers == .control else { return super.performKeyEquivalent(with: event) }
+        switch event.charactersIgnoringModifiers?.lowercased() {
+        case "c": onCopy?(); return true
+        case "x": onCut?(); return true
+        case "v": onPaste?(); return true
+        default: return super.performKeyEquivalent(with: event)
+        }
     }
 }
 
@@ -52,6 +71,8 @@ final class FileListViewController: NSViewController {
     private var sharingServicePicker: NSSharingServicePicker?
     private var watchedDirectory: URL?
     private var pendingSelectionURL: URL?
+    private static var cutPasteboardChangeCount: Int?
+    private static var transferInProgress = false
 
     private let dateFormatter: DateFormatter = {
         let formatter = DateFormatter()
@@ -225,6 +246,10 @@ final class FileListViewController: NSViewController {
         tableView.setAccessibilityLabel("ファイル一覧")
         tableView.onOpen = { [weak self] in self?.openSelection() }
         tableView.onQuickLook = { [weak self] in self?.showQuickLook() }
+        tableView.onCopy = { [weak self] in self?.copyItems() }
+        tableView.onCut = { [weak self] in self?.cutItems() }
+        tableView.onPaste = { [weak self] in self?.pasteIntoCurrentDirectory() }
+        tableView.onRename = { [weak self] in self?.promptForRename() }
         tableView.contextMenuProvider = { [weak self] event in
             self?.makeContextMenu(for: event)
         }
@@ -262,6 +287,7 @@ final class FileListViewController: NSViewController {
                 symbol: "plus.rectangle.on.rectangle",
                 action: #selector(openSelectionInNewTab)
             ))
+            menu.addItem(makePinMenuItem(for: singleItem.url, action: #selector(toggleSelectionPin)))
         }
 
         if let singleItem, !singleItem.canBrowse {
@@ -276,6 +302,7 @@ final class FileListViewController: NSViewController {
 
         menu.addItem(.separator())
         menu.addItem(makeNewFolderMenuItem())
+        menu.addItem(makeNewTextFileMenuItem())
         menu.addItem(.separator())
         menu.addItem(makeMenuItem(
             title: "Quick Look",
@@ -292,6 +319,13 @@ final class FileListViewController: NSViewController {
             action: #selector(copyItems),
             keyEquivalent: "c"
         ))
+        menu.addItem(makeMenuItem(title: "切り取り", symbol: "scissors", action: #selector(cutItems), keyEquivalent: "x"))
+        if singleItem?.canBrowse == true {
+            menu.addItem(makeMenuItem(title: "このフォルダーに貼り付け", symbol: "doc.on.clipboard", action: #selector(pasteIntoSelectedDirectory)))
+        }
+        if singleItem != nil {
+            menu.addItem(makeMenuItem(title: "名前の変更", symbol: "pencil", action: #selector(promptForRename)))
+        }
         menu.addItem(makeMenuItem(
             title: selection.count > 1 ? "名前をコピー" : "ファイル名をコピー",
             symbol: "textformat",
@@ -335,6 +369,11 @@ final class FileListViewController: NSViewController {
     func makeBackgroundContextMenu() -> NSMenu {
         let menu = NSMenu(title: "フォルダー")
         menu.addItem(makeNewFolderMenuItem())
+        menu.addItem(makeNewTextFileMenuItem())
+        menu.addItem(makeMenuItem(title: "貼り付け", symbol: "doc.on.clipboard", action: #selector(pasteIntoCurrentDirectory), keyEquivalent: "v"))
+        if let currentDirectory {
+            menu.addItem(makePinMenuItem(for: currentDirectory, action: #selector(toggleCurrentDirectoryPin)))
+        }
         menu.addItem(.separator())
         menu.addItem(makeMenuItem(
             title: "更新",
@@ -377,6 +416,34 @@ final class FileListViewController: NSViewController {
             symbol: "folder.badge.plus",
             action: #selector(promptForNewFolder)
         )
+    }
+
+    private func makeNewTextFileMenuItem() -> NSMenuItem {
+        makeMenuItem(title: "新しいテキストファイル", symbol: "doc.badge.plus", action: #selector(promptForNewTextFile))
+    }
+
+    private func makePinMenuItem(for url: URL, action: Selector) -> NSMenuItem {
+        let pinned = PinnedFoldersStore.shared.contains(url)
+        return makeMenuItem(
+            title: pinned ? "クイックアクセスから外す" : "クイックアクセスにピン留め",
+            symbol: pinned ? "pin.slash" : "pin",
+            action: action
+        )
+    }
+
+    @objc private func toggleSelectionPin() {
+        guard selectedItems.count == 1, let item = selectedItems.first, item.canBrowse else { return }
+        togglePin(item.url)
+    }
+
+    @objc private func toggleCurrentDirectoryPin() {
+        guard let currentDirectory else { return }
+        togglePin(currentDirectory)
+    }
+
+    private func togglePin(_ url: URL) {
+        let store = PinnedFoldersStore.shared
+        if store.contains(url) { store.unpin(url) } else { store.pin(url) }
     }
 
     private func makeTrashMenuItem(selectionCount: Int) -> NSMenuItem {
@@ -505,12 +572,12 @@ final class FileListViewController: NSViewController {
         }
         updateStatusLabel(selectedCount: selectedRows.count)
 
-        if let createdFolderURL = pendingSelectionURL,
-           allItems.contains(where: { $0.url.standardizedFileURL == createdFolderURL.standardizedFileURL }) {
+        if let selectedURL = pendingSelectionURL,
+           allItems.contains(where: { $0.url.standardizedFileURL == selectedURL.standardizedFileURL }) {
             pendingSelectionURL = nil
             statusLabel.stringValue = selectedRows.isEmpty
-                ? "「\(createdFolderURL.lastPathComponent)」を作成しました（検索条件により非表示）"
-                : "「\(createdFolderURL.lastPathComponent)」を作成しました"
+                ? "「\(selectedURL.lastPathComponent)」は検索条件により非表示です"
+                : "「\(selectedURL.lastPathComponent)」を選択しました"
         }
 
         if items.isEmpty {
@@ -658,10 +725,131 @@ final class FileListViewController: NSViewController {
     }
 
     @objc private func copyItems() {
-        let urls = selectedItems.map(\.url) as [NSURL]
+        writeFileClipboard(selectedItems.map(\.url), cutting: false)
+    }
+
+    @objc private func cutItems() {
+        writeFileClipboard(selectedItems.map(\.url), cutting: true)
+    }
+
+    private func writeFileClipboard(_ urls: [URL], cutting: Bool) {
         guard !urls.isEmpty else { return }
-        NSPasteboard.general.clearContents()
-        NSPasteboard.general.writeObjects(urls)
+        let pasteboard = NSPasteboard.general
+        pasteboard.clearContents()
+        if pasteboard.writeObjects(urls.map { $0.standardizedFileURL as NSURL }) {
+            Self.cutPasteboardChangeCount = cutting ? pasteboard.changeCount : nil
+            statusLabel.stringValue = cutting ? "\(urls.count) 個の項目を切り取りました" : "\(urls.count) 個の項目をコピーしました"
+        } else {
+            Self.cutPasteboardChangeCount = nil
+        }
+    }
+
+    @objc private func pasteIntoCurrentDirectory() {
+        guard let currentDirectory else { return }
+        pasteFiles(into: currentDirectory)
+    }
+
+    @objc private func pasteIntoSelectedDirectory() {
+        guard selectedItems.count == 1, let item = selectedItems.first, item.canBrowse else { return }
+        pasteFiles(into: item.url)
+    }
+
+    private func pasteFiles(into destination: URL) {
+        guard !Self.transferInProgress else { return }
+        let pasteboard = NSPasteboard.general
+        let urls = (pasteboard.readObjects(forClasses: [NSURL.self], options: [.urlReadingFileURLsOnly: true]) as? [URL] ?? [])
+            .map(\.standardizedFileURL)
+        guard !urls.isEmpty else { return }
+        let changeCount = pasteboard.changeCount
+        let moving = Self.cutPasteboardChangeCount == changeCount
+        Self.transferInProgress = true
+        statusLabel.stringValue = moving ? "移動中…" : "コピー中…"
+        let service = directoryService
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            var completed: [(URL, URL)] = []
+            var failures: [(URL, String)] = []
+            for source in urls {
+                do {
+                    completed.append((source, try service.transferItem(at: source, to: destination, moving: moving)))
+                } catch {
+                    failures.append((source, error.localizedDescription))
+                }
+            }
+            DispatchQueue.main.async {
+                Self.transferInProgress = false
+                if moving {
+                    for (source, result) in completed { PinnedFoldersStore.shared.relocate(from: source, to: result) }
+                    if NSPasteboard.general.changeCount == changeCount {
+                        if failures.isEmpty {
+                            NSPasteboard.general.clearContents()
+                            Self.cutPasteboardChangeCount = nil
+                        } else {
+                            let board = NSPasteboard.general
+                            board.clearContents()
+                            if board.writeObjects(failures.map { $0.0 as NSURL }) {
+                                Self.cutPasteboardChangeCount = board.changeCount
+                            } else {
+                                Self.cutPasteboardChangeCount = nil
+                            }
+                        }
+                    }
+                }
+                guard let self else { return }
+                if self.currentDirectory == destination, let first = completed.first?.1 {
+                    self.pendingSelectionURL = first
+                }
+                self.reload()
+                if !failures.isEmpty {
+                    let alert = NSAlert()
+                    alert.alertStyle = .warning
+                    alert.messageText = moving ? "項目を移動できませんでした" : "項目をコピーできませんでした"
+                    let details = failures.prefix(8).map { "\($0.0.lastPathComponent): \($0.1)" }.joined(separator: "\n")
+                    alert.informativeText = "完了: \(completed.count) 件、失敗: \(failures.count) 件\n\(details)"
+                    alert.addButton(withTitle: "閉じる")
+                    if let window = self.view.window { alert.beginSheetModal(for: window) } else { alert.runModal() }
+                }
+            }
+        }
+    }
+
+    @objc private func promptForRename() {
+        guard selectedItems.count == 1, let item = selectedItems.first else { return }
+        let nameField = NSTextField(string: item.name)
+        nameField.frame = NSRect(x: 0, y: 0, width: 320, height: 24)
+        nameField.setAccessibilityLabel("新しい名前")
+        let alert = NSAlert()
+        alert.messageText = "名前の変更"
+        alert.informativeText = "新しい名前を入力してください。"
+        alert.accessoryView = nameField
+        alert.addButton(withTitle: "変更")
+        alert.addButton(withTitle: "キャンセル")
+        let completion: (NSApplication.ModalResponse) -> Void = { [weak self] response in
+            guard response == .alertFirstButtonReturn, let self else { return }
+            do {
+                let result = try self.directoryService.renameItem(at: item.url, to: nameField.stringValue)
+                PinnedFoldersStore.shared.relocate(from: item.url, to: result)
+                if self.currentDirectory == item.url.deletingLastPathComponent().standardizedFileURL {
+                    self.pendingSelectionURL = result
+                    self.reload()
+                }
+            } catch {
+                self.presentFileOperationError(message: "名前を変更できませんでした", error: error)
+            }
+        }
+        if let window = view.window {
+            alert.beginSheetModal(for: window, completionHandler: completion)
+            DispatchQueue.main.async {
+                window.makeFirstResponder(nameField)
+                nameField.selectText(nil)
+                if !item.canBrowse, !item.url.pathExtension.isEmpty,
+                   let editor = nameField.currentEditor() {
+                    let baseName = (item.name as NSString).deletingPathExtension
+                    editor.selectedRange = NSRange(location: 0, length: (baseName as NSString).length)
+                }
+            }
+        } else {
+            completion(alert.runModal())
+        }
     }
 
     @objc private func copyNames() {
@@ -701,6 +889,41 @@ final class FileListViewController: NSViewController {
         let completion: (NSApplication.ModalResponse) -> Void = { [weak self] response in
             guard response == .alertFirstButtonReturn else { return }
             self?.createFolder(named: nameField.stringValue)
+        }
+        if let window = view.window {
+            alert.beginSheetModal(for: window, completionHandler: completion)
+            DispatchQueue.main.async {
+                window.makeFirstResponder(nameField)
+                nameField.selectText(nil)
+            }
+        } else {
+            completion(alert.runModal())
+        }
+    }
+
+    @objc private func promptForNewTextFile() {
+        guard let directory = currentDirectory else { return }
+        let nameField = NSTextField(string: directoryService.suggestedTextFileName(in: directory))
+        nameField.frame = NSRect(x: 0, y: 0, width: 320, height: 24)
+        nameField.setAccessibilityLabel("新しいテキストファイル名")
+        let alert = NSAlert()
+        alert.messageText = "新しいテキストファイル"
+        alert.informativeText = "ファイル名を入力してください。拡張子 .txt は自動的に付けられます。"
+        alert.accessoryView = nameField
+        alert.addButton(withTitle: "作成")
+        alert.addButton(withTitle: "キャンセル")
+        let completion: (NSApplication.ModalResponse) -> Void = { [weak self] response in
+            guard response == .alertFirstButtonReturn, let self else { return }
+            do {
+                let url = try self.directoryService.createTextFile(named: nameField.stringValue, in: directory)
+                if self.currentDirectory == directory {
+                    self.pendingSelectionURL = url
+                    self.reloadWorkItem?.cancel()
+                    self.loadCurrentDirectory(showProgress: false)
+                }
+            } catch {
+                self.presentFileOperationError(message: "テキストファイルを作成できませんでした", error: error)
+            }
         }
         if let window = view.window {
             alert.beginSheetModal(for: window, completionHandler: completion)

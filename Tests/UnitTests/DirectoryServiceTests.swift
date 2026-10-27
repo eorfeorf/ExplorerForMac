@@ -71,6 +71,53 @@ final class DirectoryServiceTests: XCTestCase {
         XCTAssertThrowsError(try service.createFolder(named: "   ", in: temporaryDirectory))
     }
 
+    func testCreateTextFileSuggestsUniqueNamesAndNeverOverwrites() throws {
+        let service = DirectoryService()
+        let firstName = service.suggestedTextFileName(in: temporaryDirectory)
+        let first = try service.createTextFile(named: firstName, in: temporaryDirectory)
+        try Data("keep".utf8).write(to: first)
+        XCTAssertEqual(service.suggestedTextFileName(in: temporaryDirectory), "新しいテキスト ドキュメント (2).txt")
+        XCTAssertThrowsError(try service.createTextFile(named: firstName, in: temporaryDirectory))
+        XCTAssertEqual(try Data(contentsOf: first), Data("keep".utf8))
+        XCTAssertThrowsError(try service.createTextFile(named: "../escape", in: temporaryDirectory))
+        XCTAssertThrowsError(try service.createTextFile(named: " ", in: temporaryDirectory))
+        let second = try service.createTextFile(named: "メモ", in: temporaryDirectory)
+        XCTAssertEqual(second.lastPathComponent, "メモ.txt")
+        XCTAssertEqual(try Data(contentsOf: second), Data())
+    }
+
+    func testCopyMoveAndRenamePreserveFilesAndRejectConflicts() throws {
+        let service = DirectoryService()
+        let source = temporaryDirectory.appendingPathComponent("report.txt")
+        let folder = temporaryDirectory.appendingPathComponent("destination", isDirectory: true)
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: false)
+        try Data("original".utf8).write(to: source)
+        let duplicate = try service.transferItem(at: source, to: temporaryDirectory, moving: false)
+        XCTAssertEqual(duplicate.lastPathComponent, "report - コピー.txt")
+        let copied = try service.transferItem(at: source, to: folder, moving: false)
+        XCTAssertEqual(try Data(contentsOf: copied), Data("original".utf8))
+        XCTAssertThrowsError(try service.transferItem(at: source, to: folder, moving: true))
+        XCTAssertEqual(try Data(contentsOf: source), Data("original".utf8))
+        let renamed = try service.renameItem(at: duplicate, to: "renamed.txt")
+        XCTAssertThrowsError(try service.renameItem(at: renamed, to: "report.txt"))
+        XCTAssertThrowsError(try service.renameItem(at: renamed, to: "../outside"))
+        let moved = try service.transferItem(at: renamed, to: folder, moving: true)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: renamed.path))
+        XCTAssertEqual(try Data(contentsOf: moved), Data("original".utf8))
+    }
+
+    func testTransferRejectsFolderIntoItselfIncludingSymlinkDestination() throws {
+        let service = DirectoryService()
+        let source = temporaryDirectory.appendingPathComponent("folder", isDirectory: true)
+        let child = source.appendingPathComponent("child", isDirectory: true)
+        let link = temporaryDirectory.appendingPathComponent("link")
+        try FileManager.default.createDirectory(at: child, withIntermediateDirectories: true)
+        try FileManager.default.createSymbolicLink(at: link, withDestinationURL: child)
+        XCTAssertThrowsError(try service.transferItem(at: source, to: child, moving: false))
+        XCTAssertThrowsError(try service.transferItem(at: source, to: link, moving: true))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: source.path))
+    }
+
     func testTrashItemsMovesMultipleItemsToTrash() throws {
         let first = temporaryDirectory.appendingPathComponent("first.txt")
         let second = temporaryDirectory.appendingPathComponent("second.txt")

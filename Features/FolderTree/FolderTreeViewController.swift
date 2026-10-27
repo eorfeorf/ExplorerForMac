@@ -265,7 +265,7 @@ extension FolderTreeViewController: NSOutlineViewDelegate {
                 ? NSImage(systemSymbolName: "ellipsis", accessibilityDescription: nil)
                 : item.isPinned
                     ? NSImage(systemSymbolName: "pin.fill", accessibilityDescription: nil)
-                    : NSWorkspace.shared.icon(forFile: item.url.path)
+                    : NSImage(systemSymbolName: "folder", accessibilityDescription: nil)
             cell.textField?.toolTip = item.url.path
         } else {
             cell.textField?.toolTip = nil

@@ -31,7 +31,6 @@ final class PinnedFoldersStore {
 
     private let defaults: UserDefaults
     private let key = "ExplorerForMac.pinnedFolders.v1"
-    private let maximumFolderCount = 50
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
@@ -54,7 +53,7 @@ final class PinnedFoldersStore {
         guard !contains(normalized) else { return false }
         var paths = urls.map(\.path)
         paths.append(normalized.path)
-        defaults.set(Array(paths.prefix(maximumFolderCount)), forKey: key)
+        defaults.set(paths, forKey: key)
         notifyChange()
         return true
     }
@@ -69,6 +68,21 @@ final class PinnedFoldersStore {
         defaults.set(paths, forKey: key)
         notifyChange()
         return true
+    }
+
+    func relocate(from source: URL, to destination: URL) {
+        let oldPath = normalizedPath(for: source)
+        let newPath = normalizedPath(for: destination)
+        guard oldPath != newPath else { return }
+        var seen = Set<String>()
+        let paths = urls.map(\.path).map { path -> String in
+            if path == oldPath { return newPath }
+            if path.hasPrefix(oldPath + "/") { return newPath + path.dropFirst(oldPath.count) }
+            return path
+        }.filter { seen.insert($0).inserted }
+        guard paths != urls.map(\.path) else { return }
+        defaults.set(paths, forKey: key)
+        notifyChange()
     }
 
     private func normalizedPath(for url: URL) -> String {

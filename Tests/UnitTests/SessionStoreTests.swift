@@ -35,4 +35,15 @@ final class SessionStoreTests: XCTestCase {
         XCTAssertFalse(store.contains(documents))
         XCTAssertTrue(store.urls.isEmpty)
     }
+
+    func testRelocateUpdatesPinnedDescendants() {
+        let suiteName = "ExplorerForMacTests.\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let store = PinnedFoldersStore(defaults: defaults)
+        store.pin(URL(fileURLWithPath: "/tmp/old/child"))
+        store.pin(URL(fileURLWithPath: "/tmp/older"))
+        store.relocate(from: URL(fileURLWithPath: "/tmp/old"), to: URL(fileURLWithPath: "/tmp/new"))
+        XCTAssertEqual(store.urls.map(\.path), ["/tmp/new/child", "/tmp/older"])
+    }
 }
