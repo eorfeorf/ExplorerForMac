@@ -32,13 +32,17 @@ final class DirectoryServiceTests: XCTestCase {
 
     func testHiddenFilesCanBeFiltered() throws {
         let hiddenFile = temporaryDirectory.appendingPathComponent(".secret")
+        let hiddenFolder = temporaryDirectory.appendingPathComponent(".hidden-folder", isDirectory: true)
         try Data().write(to: hiddenFile)
+        try FileManager.default.createDirectory(at: hiddenFolder, withIntermediateDirectories: false)
 
         let hidden = try DirectoryService().contents(of: temporaryDirectory, showsHiddenFiles: false)
         let visible = try DirectoryService().contents(of: temporaryDirectory, showsHiddenFiles: true)
 
         XCTAssertFalse(hidden.items.contains(where: { $0.name == ".secret" }))
         XCTAssertTrue(visible.items.contains(where: { $0.name == ".secret" }))
+        XCTAssertFalse(hidden.items.contains(where: { $0.name == ".hidden-folder" }))
+        XCTAssertTrue(visible.items.contains(where: { $0.name == ".hidden-folder" && $0.canBrowse }))
     }
 
     func testFileURLIsRejectedAsDirectory() throws {

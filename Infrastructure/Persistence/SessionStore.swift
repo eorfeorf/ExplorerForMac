@@ -8,15 +8,22 @@ struct PersistedSession: Codable, Equatable {
 
 final class SessionStore {
     private let defaults: UserDefaults
-    private let key = "ExplorerForMac.session.v1"
+    private let key = "ExplorerForMac.session.v2"
+    private let legacyKey = "ExplorerForMac.session.v1"
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
     }
 
     func load() -> PersistedSession? {
-        guard let data = defaults.data(forKey: key) else { return nil }
-        return try? JSONDecoder().decode(PersistedSession.self, from: data)
+        if let data = defaults.data(forKey: key) {
+            return try? JSONDecoder().decode(PersistedSession.self, from: data)
+        }
+        guard let data = defaults.data(forKey: legacyKey),
+              var session = try? JSONDecoder().decode(PersistedSession.self, from: data) else { return nil }
+        session.showsHiddenFiles = true
+        save(session)
+        return session
     }
 
     func save(_ session: PersistedSession) {

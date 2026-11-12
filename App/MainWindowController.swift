@@ -37,7 +37,7 @@ final class MainWindowController: NSWindowController, NSWindowDelegate {
     private let browserContainer = NSView()
     private var sessions: [BrowserSession] = []
     private var selectedSessionIndex = 0
-    private var showsHiddenFiles = false
+    private var showsHiddenFiles = true
 
     private var selectedSession: BrowserSession? {
         sessions.indices.contains(selectedSessionIndex) ? sessions[selectedSessionIndex] : nil
@@ -217,7 +217,7 @@ final class MainWindowController: NSWindowController, NSWindowDelegate {
     }
 
     private func restoreSession(_ stored: PersistedSession?) {
-        showsHiddenFiles = stored?.showsHiddenFiles ?? false
+        showsHiddenFiles = stored?.showsHiddenFiles ?? true
         // Restoring history must not probe protected folders at application launch.
         // Missing or denied paths are reported inline when their tab is actually shown.
         let histories = stored?.tabs ?? []

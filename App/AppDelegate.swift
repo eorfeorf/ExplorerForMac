@@ -24,7 +24,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             let session = PersistedSession(
                 tabs: [NavigationHistory(initialURL: firstFolder)],
                 selectedTabIndex: 0,
-                showsHiddenFiles: false
+                showsHiddenFiles: sessionStore.load()?.showsHiddenFiles ?? true
             )
             showWindow(session: session)
             openPendingFolders(droppingFirst: true)

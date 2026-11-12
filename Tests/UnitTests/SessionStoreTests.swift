@@ -19,6 +19,26 @@ final class SessionStoreTests: XCTestCase {
         XCTAssertEqual(store.load(), expected)
     }
 
+    func testLegacySessionEnablesHiddenFilesOnceAndPreservesLaterChoice() throws {
+        let suiteName = "ExplorerForMacTests.\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let original = PersistedSession(
+            tabs: [NavigationHistory(initialURL: URL(fileURLWithPath: "/tmp"))],
+            selectedTabIndex: 0,
+            showsHiddenFiles: false
+        )
+        defaults.set(try JSONEncoder().encode(original), forKey: "ExplorerForMac.session.v1")
+        let store = SessionStore(defaults: defaults)
+        let migrated = try XCTUnwrap(store.load())
+        XCTAssertEqual(migrated.tabs, original.tabs)
+        XCTAssertEqual(migrated.selectedTabIndex, original.selectedTabIndex)
+        XCTAssertTrue(migrated.showsHiddenFiles)
+
+        store.save(original)
+        XCTAssertEqual(store.load(), original)
+    }
+
     func testPinnedFoldersPersistWithoutDuplicatesAndCanBeRemoved() {
         let suiteName = "ExplorerForMacTests.\(UUID().uuidString)"
         let defaults = UserDefaults(suiteName: suiteName)!
