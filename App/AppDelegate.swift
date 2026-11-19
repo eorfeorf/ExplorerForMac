@@ -5,11 +5,13 @@ import FinderSync
 @main
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private let sessionStore = SessionStore()
+    private let updater = AppUpdater()
     private var windowControllers: [MainWindowController] = []
     private var pendingFolderURLs: [URL] = []
     private var hasFinishedLaunching = false
 
     static func main() {
+        AppUpdater.runInstallerIfRequested()
         let application = NSApplication.shared
         let delegate = AppDelegate()
         application.delegate = delegate
@@ -62,6 +64,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             action: #selector(NSApplication.orderFrontStandardAboutPanel(_:)),
             keyEquivalent: ""
         )
+        let updateItem = appMenu.addItem(
+            withTitle: "アップデートを確認…",
+            action: #selector(AppUpdater.checkForUpdates(_:)),
+            keyEquivalent: ""
+        )
+        updateItem.target = updater
         appMenu.addItem(.separator())
         appMenu.addItem(
             withTitle: "フルディスクアクセス設定を開く…",

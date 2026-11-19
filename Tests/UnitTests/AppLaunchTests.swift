@@ -3,6 +3,15 @@ import XCTest
 @testable import ExplorerForMac
 
 final class AppLaunchTests: XCTestCase {
+    func testUpdaterComparesVersionComponentsNumerically() throws {
+        let current = try XCTUnwrap(AppUpdater.versionParts("0.2.9"))
+        let latest = try XCTUnwrap(AppUpdater.versionParts("0.2.10"))
+        XCTAssertTrue(current.lexicographicallyPrecedes(latest))
+        XCTAssertFalse(latest.lexicographicallyPrecedes(current))
+        XCTAssertNil(AppUpdater.versionParts("0.2.10-beta"))
+        XCTAssertNil(AppUpdater.versionParts("0.2/10"))
+    }
+
     func testSortOrderFollowsFolderAcrossControllers() throws {
         let suiteName = "ExplorerForMacTests.\(UUID().uuidString)"
         let defaults = UserDefaults(suiteName: suiteName)!
