@@ -39,14 +39,20 @@ private final class ExplorerTableView: NSTableView {
 
     override func performKeyEquivalent(with event: NSEvent) -> Bool {
         let modifiers = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
-        guard modifiers == .command || modifiers == .control else { return super.performKeyEquivalent(with: event) }
+        guard window?.firstResponder === self, modifiers == .control else {
+            return super.performKeyEquivalent(with: event)
+        }
         switch event.charactersIgnoringModifiers?.lowercased() {
-        case "c": onCopy?(); return true
-        case "x": onCut?(); return true
-        case "v": onPaste?(); return true
+        case "c": copy(nil); return true
+        case "x": cut(nil); return true
+        case "v": paste(nil); return true
         default: return super.performKeyEquivalent(with: event)
         }
     }
+
+    @objc func copy(_ sender: Any?) { onCopy?() }
+    @objc func cut(_ sender: Any?) { onCut?() }
+    @objc func paste(_ sender: Any?) { onPaste?() }
 }
 
 final class FileListViewController: NSViewController {

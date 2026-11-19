@@ -98,6 +98,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         )
         fileMenu.addItem(withTitle: "タブを閉じる", action: #selector(MainWindowController.closeCurrentTab(_:)), keyEquivalent: "w")
 
+        let editMenuItem = NSMenuItem()
+        editMenuItem.title = "編集"
+        mainMenu.addItem(editMenuItem)
+        let editMenu = NSMenu(title: "編集")
+        editMenuItem.submenu = editMenu
+        editMenu.addItem(withTitle: "切り取り", action: #selector(NSText.cut(_:)), keyEquivalent: "x")
+        editMenu.addItem(withTitle: "コピー", action: #selector(NSText.copy(_:)), keyEquivalent: "c")
+        editMenu.addItem(withTitle: "貼り付け", action: #selector(NSText.paste(_:)), keyEquivalent: "v")
+        editMenu.addItem(.separator())
+        editMenu.addItem(withTitle: "すべてを選択", action: #selector(NSResponder.selectAll(_:)), keyEquivalent: "a")
+
         let goMenuItem = NSMenuItem()
         goMenuItem.title = "移動"
         mainMenu.addItem(goMenuItem)
