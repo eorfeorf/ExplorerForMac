@@ -3,6 +3,24 @@ import XCTest
 @testable import ExplorerForMac
 
 final class SessionStoreTests: XCTestCase {
+    func testSortOrdersPersistPerFolder() {
+        let suiteName = "ExplorerForMacTests.\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let first = URL(fileURLWithPath: "/tmp/folder-a", isDirectory: true)
+        let second = URL(fileURLWithPath: "/tmp/folder-b", isDirectory: true)
+        let store = FolderSortStore(defaults: defaults)
+        let order = FolderSortOrder(column: .modifiedAt, ascending: false)
+        store.setOrder(order, for: first)
+
+        let reloaded = FolderSortStore(defaults: defaults)
+        XCTAssertEqual(reloaded.order(for: first.appendingPathComponent("../folder-a")), order)
+        XCTAssertEqual(reloaded.order(for: second), .default)
+        reloaded.setOrder(FolderSortOrder(column: .size, ascending: true), for: second)
+        XCTAssertEqual(store.order(for: first), order)
+        XCTAssertEqual(store.order(for: second), FolderSortOrder(column: .size, ascending: true))
+    }
+
     func testRoundTrip() {
         let suiteName = "ExplorerForMacTests.\(UUID().uuidString)"
         let defaults = UserDefaults(suiteName: suiteName)!

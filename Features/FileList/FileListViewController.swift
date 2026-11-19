@@ -53,6 +53,9 @@ final class FileListViewController: NSViewController {
     weak var delegate: FileListViewControllerDelegate?
 
     private let directoryService: DirectoryService
+    private let folderSortStore: FolderSortStore
+    private var folderSortObserver: NSObjectProtocol?
+    private var isRestoringSort = false
     private let watcher = DirectoryWatcher()
     private let tableView = ExplorerTableView()
     private let scrollView = NSScrollView()
@@ -88,9 +91,20 @@ final class FileListViewController: NSViewController {
         return formatter
     }()
 
-    init(directoryService: DirectoryService) {
+    init(directoryService: DirectoryService, folderSortStore: FolderSortStore = .shared) {
         self.directoryService = directoryService
+        self.folderSortStore = folderSortStore
         super.init(nibName: nil, bundle: nil)
+        folderSortObserver = NotificationCenter.default.addObserver(
+            forName: FolderSortStore.didChangeNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] notification in
+            guard let self, let store = notification.object as? FolderSortStore,
+                  store === self.folderSortStore, let url = notification.userInfo?["url"] as? URL,
+                  self.currentDirectory == url, self.isViewLoaded else { return }
+            self.restoreSortOrder(for: url)
+        }
     }
 
     required init?(coder: NSCoder) {
@@ -156,6 +170,7 @@ final class FileListViewController: NSViewController {
     deinit {
         watcher.stop()
         reloadWorkItem?.cancel()
+        if let folderSortObserver { NotificationCenter.default.removeObserver(folderSortObserver) }
     }
 
     func load(directory: URL, showsHiddenFiles: Bool, searchQuery: String) {
@@ -169,6 +184,7 @@ final class FileListViewController: NSViewController {
             tableView.reloadData()
         }
         currentDirectory = normalized
+        restoreSortOrder(for: normalized)
         self.showsHiddenFiles = showsHiddenFiles
         self.searchQuery = Self.normalizedSearchQuery(searchQuery)
         loadCurrentDirectory(showProgress: true)
@@ -664,6 +680,16 @@ final class FileListViewController: NSViewController {
         }
     }
 
+    private func restoreSortOrder(for directory: URL) {
+        let order = folderSortStore.order(for: directory)
+        let descriptor = NSSortDescriptor(key: order.column.rawValue, ascending: order.ascending)
+        guard tableView.sortDescriptors != [descriptor] else { return }
+        isRestoringSort = true
+        tableView.sortDescriptors = [descriptor]
+        isRestoringSort = false
+        if hasLoadedSnapshot { applySearchAndReload() }
+    }
+
     @objc private func openSelection() {
         guard tableView.selectedRow >= 0, items.indices.contains(tableView.selectedRow) else { return }
         delegate?.fileList(self, didRequestOpen: items[tableView.selectedRow])
@@ -1154,8 +1180,12 @@ extension FileListViewController: NSTableViewDelegate {
     }
 
     func tableView(_ tableView: NSTableView, sortDescriptorsDidChange oldDescriptors: [NSSortDescriptor]) {
-        sortItems(using: tableView.sortDescriptors)
-        tableView.reloadData()
+        guard !isRestoringSort else { return }
+        if let currentDirectory, let descriptor = tableView.sortDescriptors.first,
+           let key = descriptor.key, let column = FolderSortOrder.Column(rawValue: key) {
+            folderSortStore.setOrder(FolderSortOrder(column: column, ascending: descriptor.ascending), for: currentDirectory)
+        }
+        applySearchAndReload()
     }
 
     private func makeCell(identifier: NSUserInterfaceItemIdentifier, includesIcon: Bool) -> NSTableCellView {

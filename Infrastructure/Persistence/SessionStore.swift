@@ -1,5 +1,46 @@
 import Foundation
 
+struct FolderSortOrder: Codable, Equatable {
+    enum Column: String, Codable {
+        case name, modifiedAt, kind, size
+    }
+
+    var column: Column
+    var ascending: Bool
+
+    static let `default` = FolderSortOrder(column: .name, ascending: true)
+}
+
+final class FolderSortStore {
+    static let shared = FolderSortStore()
+    static let didChangeNotification = Notification.Name("ExplorerForMac.folderSortDidChange")
+    private let defaults: UserDefaults
+    private let key = "ExplorerForMac.folderSort.v1"
+
+    init(defaults: UserDefaults = .standard) {
+        self.defaults = defaults
+    }
+
+    func order(for url: URL) -> FolderSortOrder {
+        orders[url.standardizedFileURL.path] ?? .default
+    }
+
+    func setOrder(_ order: FolderSortOrder, for url: URL) {
+        let normalizedURL = url.standardizedFileURL
+        var saved = orders
+        guard saved[normalizedURL.path] != order else { return }
+        saved[normalizedURL.path] = order
+        guard let data = try? JSONEncoder().encode(saved) else { return }
+        defaults.set(data, forKey: key)
+        NotificationCenter.default.post(name: Self.didChangeNotification, object: self, userInfo: ["url": normalizedURL])
+    }
+
+    private var orders: [String: FolderSortOrder] {
+        guard let data = defaults.data(forKey: key) else { return [:] }
+        return (try? JSONDecoder().decode([String: FolderSortOrder].self, from: data)) ?? [:]
+    }
+}
+
 struct PersistedSession: Codable, Equatable {
     var tabs: [NavigationHistory]
     var selectedTabIndex: Int

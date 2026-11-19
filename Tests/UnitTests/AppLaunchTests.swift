@@ -3,6 +3,35 @@ import XCTest
 @testable import ExplorerForMac
 
 final class AppLaunchTests: XCTestCase {
+    func testSortOrderFollowsFolderAcrossControllers() throws {
+        let suiteName = "ExplorerForMacTests.\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let store = FolderSortStore(defaults: defaults)
+        let first = URL(fileURLWithPath: "/tmp/sort-first", isDirectory: true)
+        let second = URL(fileURLWithPath: "/tmp/sort-second", isDirectory: true)
+        let controller = FileListViewController(directoryService: DirectoryService(), folderSortStore: store)
+        let other = FileListViewController(directoryService: DirectoryService(), folderSortStore: store)
+        let table = try XCTUnwrap(allSubviews(in: controller.view).compactMap { $0 as? NSTableView }.first)
+        let otherTable = try XCTUnwrap(allSubviews(in: other.view).compactMap { $0 as? NSTableView }.first)
+
+        controller.load(directory: first, showsHiddenFiles: false, searchQuery: "")
+        other.load(directory: first, showsHiddenFiles: false, searchQuery: "")
+        table.sortDescriptors = [NSSortDescriptor(key: "size", ascending: false)]
+        XCTAssertEqual(otherTable.sortDescriptors.first?.key, "size")
+        XCTAssertEqual(otherTable.sortDescriptors.first?.ascending, false)
+
+        controller.load(directory: second, showsHiddenFiles: false, searchQuery: "")
+        XCTAssertEqual(table.sortDescriptors.first?.key, "name")
+        XCTAssertEqual(table.sortDescriptors.first?.ascending, true)
+        table.sortDescriptors = [NSSortDescriptor(key: "modifiedAt", ascending: false)]
+        controller.load(directory: first, showsHiddenFiles: false, searchQuery: "")
+        XCTAssertEqual(table.sortDescriptors.first?.key, "size")
+        XCTAssertEqual(table.sortDescriptors.first?.ascending, false)
+        controller.load(directory: second, showsHiddenFiles: false, searchQuery: "")
+        XCTAssertEqual(table.sortDescriptors.first?.key, "modifiedAt")
+    }
+
     func testFolderSearchMatchesNamesNaturally() {
         XCTAssertTrue(FileListViewController.itemName("重要書類.PDF", matchesSearchQuery: "書類"))
         XCTAssertTrue(FileListViewController.itemName("Résumé.txt", matchesSearchQuery: "resume"))
